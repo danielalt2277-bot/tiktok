@@ -3,6 +3,7 @@ const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const { TikTokLiveConnection } = require('tiktok-live-connector');
+const fs = require('fs');
 
 // Serve static files from the 'public' directory
 app.use(express.static('public'));
@@ -45,25 +46,32 @@ io.on('connection', (socket) => {
     };
 
     const setupEventHandlers = (connection) => {
-        let likers = {};
-        connection.on('like', data => {
-            if (data.uniqueId) {
-                if (!likers[data.uniqueId]) {
-                    likers[data.uniqueId] = {
-                        username: data.uniqueId,
-                        likes: 0,
-                        pfp: data.profilePictureUrl
-                    };
-                }
-                likers[data.uniqueId].likes += data.likeCount;
-                const top5 = Object.values(likers).sort((a, b) => b.likes - a.likes).slice(0, 5);
-                socket.emit('topLikersUpdate', top5);
-            }
-        });
+        let donators = {};
 
         connection.on('gift', (data) => {
-            socket.emit('gift', data);
-        })
+            const logMessage = `${new Date().toISOString()} - ${data.uniqueId} sent ${data.giftName} x${data.repeatCount}\n`;
+            fs.appendFile('donations.log', logMessage, (err) => {
+                if (err) console.error(err);
+            });
+            // Process gift event to track top donators
+            if (data.uniqueId && data.diamondCount > 0) {
+                if (!donators[data.uniqueId]) {
+                    donators[data.uniqueId] = {
+                        username: data.uniqueId,
+                        coins: 0,
+                        pfp: data.profilePictureUrl,
+                    };
+                }
+
+                donators[data.uniqueId].coins += data.diamondCount * data.repeatCount;
+
+                const topDonators = Object.values(donators)
+                    .sort((a, b) => b.coins - a.coins)
+                    .slice(0, 3);
+
+                socket.emit('topDonatorsUpdate', topDonators);
+            }
+        });
 
         connection.on('disconnect', () => {
             console.log('Disconnected from TikTok LIVE');

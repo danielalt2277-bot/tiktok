@@ -2,8 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const connectButton = document.getElementById('connect-button');
     const usernameInput = document.getElementById('username-input');
     const statusDiv = document.getElementById('status');
-    const likersList = document.getElementById('likers-list');
-    const donationList = document.getElementById('donation-list');
+    const leaderboardList = document.getElementById('leaderboard-list');
     const loader = document.getElementById('loader');
 
     const socket = io();
@@ -11,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     connectButton.addEventListener('click', () => {
         const username = usernameInput.value;
         if (username) {
-            likersList.innerHTML = ''; // Clear the list on new connection
+            leaderboardList.innerHTML = ''; // Clear the list on new connection
             loader.classList.remove('hidden');
             socket.emit('setUniqueId', username);
         }
@@ -31,30 +30,22 @@ document.addEventListener('DOMContentLoaded', () => {
         loader.classList.add('hidden');
     });
 
-    socket.on('topLikersUpdate', (topLikers) => {
-        likersList.innerHTML = '';
-        topLikers.forEach(user => {
+    socket.on('topDonatorsUpdate', (topDonators) => {
+        leaderboardList.innerHTML = '';
+        topDonators.forEach((user, index) => {
             const li = document.createElement('li');
             li.innerHTML = `
-                <img src="${user.pfp}" alt="${user.username}">
+                <div class="rank">${index + 1}</div>
+                <img src="${user.pfp}" alt="${user.username}" class="pfp">
                 <div class="user-info">
                     <div class="username">${user.username}</div>
-                    <div class="likes">${user.likes} likes</div>
+                    <div class="coins">
+                        <span class="coin-icon"></span>
+                        ${user.coins}
+                    </div>
                 </div>
             `;
-            likersList.appendChild(li);
+            leaderboardList.appendChild(li);
         });
-    });
-
-    socket.on('gift', (data) => {
-        const li = document.createElement('li');
-        li.innerHTML = `
-            <img src="${data.profilePictureUrl}" alt="${data.uniqueId}">
-            <div class="user-info">
-                <div class="username">${data.uniqueId}</div>
-                <div class="gift">${data.giftName} x${data.repeatCount}</div>
-            </div>
-        `;
-        donationList.appendChild(li);
     });
 });
