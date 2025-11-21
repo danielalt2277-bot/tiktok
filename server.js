@@ -34,17 +34,19 @@ io.on('connection', (socket) => {
         tiktokLiveConnection.connect().then(state => {
             console.info(`Connected to roomId ${state.roomId}`);
             socket.emit('connected', `Connected to ${uniqueId}`);
+
+            // NOW setup event handlers
+            setupEventHandlers(tiktokLiveConnection);
+
         }).catch(err => {
             console.error(`Connection failed on attempt ${attempt}:`, String(err));
             setTimeout(() => connectWithRetry(uniqueId, attempt + 1), 3000); // Wait 3 seconds
         });
-
-        setupEventHandlers();
     };
 
-    const setupEventHandlers = () => {
+    const setupEventHandlers = (connection) => {
         let likers = {};
-        tiktokLiveConnection.on('like', data => {
+        connection.on('like', data => {
             if (data.uniqueId) {
                 if (!likers[data.uniqueId]) {
                     likers[data.uniqueId] = {
@@ -59,11 +61,11 @@ io.on('connection', (socket) => {
             }
         });
 
-        tiktokLiveConnection.on('disconnect', () => {
+        connection.on('disconnect', () => {
             console.log('Disconnected from TikTok LIVE');
         });
 
-        tiktokLiveConnection.on('error', (err) => {
+        connection.on('error', (err) => {
             console.error('Connection error:', String(err));
         });
     };
