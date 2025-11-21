@@ -10,10 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
     connectButton.addEventListener('click', () => {
         const username = usernameInput.value;
         if (username) {
-            statusDiv.textContent = `Connecting to ${username}...`;
+            likersList.innerHTML = ''; // Clear the list on new connection
             loader.classList.remove('hidden');
             socket.emit('setUniqueId', username);
         }
+    });
+
+    socket.on('statusUpdate', (message) => {
+        statusDiv.textContent = message;
     });
 
     socket.on('connected', (message) => {
