@@ -43,13 +43,8 @@ io.on('connection', (socket) => {
 
       console.error('Failed to connect', errorString);
 
-      let errorMessage = 'Failed to connect. Please try again.';
-      if (errorString.includes('user_not_found') || errorString.includes('User not found')) {
-        errorMessage = 'User not found. Please check the username.';
-      } else if (errorString.includes('LIVE has ended')) {
-        errorMessage = 'This user is not currently live.';
-      }
-
+      // The unofficial library is unstable. Provide a clear message to the user.
+      let errorMessage = 'Connection failed. The service used to connect to TikTok is currently unstable. Please try again later.';
       socket.emit('connectionFailed', errorMessage);
     });
 
@@ -85,9 +80,8 @@ io.on('connection', (socket) => {
     });
 
     tiktokLiveConnection.on('error', (err) => {
-        const errorString = String(err);
-        console.error('Connection error:', errorString);
-        socket.emit('connectionFailed', 'Connection error. Please try again.');
+        console.error('Connection error:', String(err));
+        // Do not send another message here, as the initial 'catch' will handle it.
     });
   });
 
