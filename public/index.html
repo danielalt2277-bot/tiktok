@@ -9,18 +9,18 @@
 <body>
     <div class="container">
         <div class="video-container">
-            <video autoplay loop muted>
-                <source src="https://sample-videos.com/video123/mp4/720/big_buck_bunny_720p_1mb.mp4" type="video/mp4">
-            </video>
-            <div class="video-overlay">
-                <button id="like-button">&#x2764;</button>
+            <div class="form-container">
+                <input type="text" id="username-input" placeholder="Enter TikTok Username">
+                <button id="connect-button">Connect</button>
             </div>
+            <div id="status"></div>
         </div>
         <div class="top-likers">
             <h2>Top Likers</h2>
             <ul id="likers-list"></ul>
         </div>
     </div>
+    <script src="/socket.io/socket.io.js"></script>
     <script src="js/script.js"></script>
 </body>
 </html>
