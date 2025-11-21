@@ -61,6 +61,10 @@ io.on('connection', (socket) => {
             }
         });
 
+        connection.on('gift', (data) => {
+            socket.emit('gift', data);
+        })
+
         connection.on('disconnect', () => {
             console.log('Disconnected from TikTok LIVE');
         });

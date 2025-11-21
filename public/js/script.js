@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const usernameInput = document.getElementById('username-input');
     const statusDiv = document.getElementById('status');
     const likersList = document.getElementById('likers-list');
+    const donationList = document.getElementById('donation-list');
     const loader = document.getElementById('loader');
 
     const socket = io();
@@ -43,5 +44,17 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             likersList.appendChild(li);
         });
+    });
+
+    socket.on('gift', (data) => {
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <img src="${data.profilePictureUrl}" alt="${data.uniqueId}">
+            <div class="user-info">
+                <div class="username">${data.uniqueId}</div>
+                <div class="gift">${data.giftName} x${data.repeatCount}</div>
+            </div>
+        `;
+        donationList.appendChild(li);
     });
 });
