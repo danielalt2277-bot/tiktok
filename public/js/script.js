@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const usernameInput = document.getElementById('username-input');
     const statusDiv = document.getElementById('status');
     const likersList = document.getElementById('likers-list');
+    const loader = document.getElementById('loader');
 
     const socket = io();
 
@@ -10,16 +11,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const username = usernameInput.value;
         if (username) {
             statusDiv.textContent = `Connecting to ${username}...`;
+            loader.classList.remove('hidden');
             socket.emit('setUniqueId', username);
         }
     });
 
     socket.on('connected', (message) => {
         statusDiv.textContent = message;
+        loader.classList.add('hidden');
     });
 
     socket.on('connectionFailed', (message) => {
         statusDiv.textContent = message;
+        loader.classList.add('hidden');
     });
 
     socket.on('topLikersUpdate', (topLikers) => {

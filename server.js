@@ -6,7 +6,7 @@ const io = require('socket.io')(http);
 // Serve static files from the 'public' directory
 app.use(express.static('public'));
 
-const { WebcastPushConnection } = require('tiktok-live-connector');
+const { TikTokLiveConnection } = require('tiktok-live-connector');
 
 io.on('connection', (socket) => {
   console.log('A user connected.');
@@ -22,15 +22,35 @@ io.on('connection', (socket) => {
     console.log(`Connecting to TikTok LIVE of ${uniqueId}`);
 
     // Create a new wrapper object and pass the username
-    tiktokLiveConnection = new WebcastPushConnection(uniqueId);
+    tiktokLiveConnection = new TikTokLiveConnection(uniqueId);
 
     // Connect to the webcast
     tiktokLiveConnection.connect().then(state => {
       console.info(`Connected to roomId ${state.roomId}`);
       socket.emit('connected', `Connected to ${uniqueId}`);
     }).catch(err => {
-      console.error('Failed to connect', err);
-      socket.emit('connectionFailed', 'Failed to connect');
+      // Final attempt at robust error parsing
+      let errorString = 'Unknown Error';
+      if (typeof err === 'object' && err !== null) {
+        if (err.hasOwnProperty('message')) {
+          errorString = String(err.message);
+        } else {
+          errorString = JSON.stringify(err);
+        }
+      } else {
+        errorString = String(err);
+      }
+
+      console.error('Failed to connect', errorString);
+
+      let errorMessage = 'Failed to connect. Please try again.';
+      if (errorString.includes('user_not_found') || errorString.includes('User not found')) {
+        errorMessage = 'User not found. Please check the username.';
+      } else if (errorString.includes('LIVE has ended')) {
+        errorMessage = 'This user is not currently live.';
+      }
+
+      socket.emit('connectionFailed', errorMessage);
     });
 
     let likers = {};
@@ -65,8 +85,9 @@ io.on('connection', (socket) => {
     });
 
     tiktokLiveConnection.on('error', (err) => {
-        console.error('Connection error:', err);
-        socket.emit('connectionFailed', 'Connection error');
+        const errorString = String(err);
+        console.error('Connection error:', errorString);
+        socket.emit('connectionFailed', 'Connection error. Please try again.');
     });
   });
 
