@@ -67,7 +67,7 @@ io.on('connection', (socket) => {
             const totalDiamonds = diamondCount * repeatCount;
 
             // Profile picture URL can be inconsistent
-            const pfp = data.user.profilePictureUrl || data.profilePictureUrl || 'https://placehold.co/100x100.png';
+            const pfp = data.user.profilePictureUrl || data.profilePictureUrl || data.gift?.icon || 'https://placehold.co/100x100.png';
 
             if (!donators[userId]) {
                 donators[userId] = {
