@@ -53,21 +53,25 @@ io.on('connection', (socket) => {
                 // Streak in progress, no need to act here
             } else {
                 // Gift streak ended or non-streakable gift
-                const userId = data.user.uniqueId;
-                if (!donators[userId]) {
-                    donators[userId] = {
-                        username: userId,
-                        diamonds: 0,
-                        pfp: data.user.profilePictureUrl
-                    };
-                }
-                donators[userId].diamonds += data.diamondCount * data.repeatCount;
+                if (data.user) {
+                    const userId = data.user.uniqueId;
+                    const diamondCount = data.diamondCount || 0;
 
-                // Log the donation
-                const logEntry = `${new Date().toISOString()} | ${userId} donated ${data.diamondCount * data.repeatCount} diamonds with ${data.giftName}.\n`;
-                fs.appendFile(DONATIONS_LOG_FILE, logEntry, (err) => {
-                    if (err) console.error('Failed to log donation:', err);
-                });
+                    if (!donators[userId]) {
+                        donators[userId] = {
+                            username: userId,
+                            diamonds: 0,
+                            pfp: data.user.profilePictureUrl || 'https://placehold.co/100x100.png'
+                        };
+                    }
+                    donators[userId].diamonds += diamondCount * data.repeatCount;
+
+                    // Log the donation
+                    const logEntry = `${new Date().toISOString()} | ${userId} donated ${diamondCount * data.repeatCount} diamonds with ${data.giftName}.\n`;
+                    fs.appendFile(DONATIONS_LOG_FILE, logEntry, (err) => {
+                        if (err) console.error('Failed to log donation:', err);
+                    });
+                }
 
                 // Update and emit top 5 donators
                 const top5Donators = Object.values(donators)
