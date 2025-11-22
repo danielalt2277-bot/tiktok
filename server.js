@@ -53,17 +53,18 @@ io.on('connection', (socket) => {
                 // Streak in progress, no need to act here
             } else {
                 // Gift streak ended or non-streakable gift
-                if (!donators[data.uniqueId]) {
-                    donators[data.uniqueId] = {
-                        username: data.uniqueId,
+                const userId = data.user.uniqueId;
+                if (!donators[userId]) {
+                    donators[userId] = {
+                        username: userId,
                         diamonds: 0,
-                        pfp: data.profilePictureUrl
+                        pfp: data.user.profilePictureUrl
                     };
                 }
-                donators[data.uniqueId].diamonds += data.diamondCount * data.repeatCount;
+                donators[userId].diamonds += data.diamondCount * data.repeatCount;
 
                 // Log the donation
-                const logEntry = `${new Date().toISOString()} | ${data.uniqueId} donated ${data.diamondCount * data.repeatCount} diamonds with ${data.giftName}.\n`;
+                const logEntry = `${new Date().toISOString()} | ${userId} donated ${data.diamondCount * data.repeatCount} diamonds with ${data.giftName}.\n`;
                 fs.appendFile(DONATIONS_LOG_FILE, logEntry, (err) => {
                     if (err) console.error('Failed to log donation:', err);
                 });
