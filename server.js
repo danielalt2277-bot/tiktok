@@ -49,36 +49,48 @@ io.on('connection', (socket) => {
 
     const setupEventHandlers = (connection) => {
         connection.on('gift', (data) => {
+            // Process gift only when streak is over
             if (data.giftType === 1 && !data.repeatEnd) {
-                // Streak in progress, no need to act here
-            } else {
-                // Gift streak ended or non-streakable gift
-                if (data.user) {
-                    const userId = data.user.uniqueId;
-                    const diamondCount = data.diamondCount || 0;
-
-                    if (!donators[userId]) {
-                        donators[userId] = {
-                            username: userId,
-                            diamonds: 0,
-                            pfp: data.user.profilePictureUrl || 'https://placehold.co/100x100.png'
-                        };
-                    }
-                    donators[userId].diamonds += diamondCount * data.repeatCount;
-
-                    // Log the donation
-                    const logEntry = `${new Date().toISOString()} | ${userId} donated ${diamondCount * data.repeatCount} diamonds with ${data.giftName}.\n`;
-                    fs.appendFile(DONATIONS_LOG_FILE, logEntry, (err) => {
-                        if (err) console.error('Failed to log donation:', err);
-                    });
-                }
-
-                // Update and emit top 5 donators
-                const top5Donators = Object.values(donators)
-                    .sort((a, b) => b.diamonds - a.diamonds)
-                    .slice(0, 5);
-                socket.emit('topDonatorsUpdate', top5Donators);
+                return;
             }
+
+            // User data might be missing
+            if (!data.user || !data.user.uniqueId) {
+                return;
+            }
+
+            const userId = data.user.uniqueId;
+
+            // Diamond count can be inconsistent
+            const diamondCount = data.diamondCount || data.gift?.diamond_count || 0;
+            const repeatCount = data.repeatCount || 1;
+            const totalDiamonds = diamondCount * repeatCount;
+
+            // Profile picture URL can be inconsistent
+            const pfp = data.user.profilePictureUrl || data.profilePictureUrl || 'https://placehold.co/100x100.png';
+
+            if (!donators[userId]) {
+                donators[userId] = {
+                    username: userId,
+                    diamonds: 0,
+                    pfp: pfp
+                };
+            }
+
+            donators[userId].diamonds += totalDiamonds;
+
+            // Log the donation
+            const giftName = data.giftName || data.gift?.name || 'Unknown Gift';
+            const logEntry = `${new Date().toISOString()} | ${userId} donated ${totalDiamonds} diamonds with ${giftName}.\n`;
+            fs.appendFile(DONATIONS_LOG_FILE, logEntry, (err) => {
+                if (err) console.error('Failed to log donation:', err);
+            });
+
+            // Update and emit top 5 donators
+            const top5Donators = Object.values(donators)
+                .sort((a, b) => b.diamonds - a.diamonds)
+                .slice(0, 5);
+            socket.emit('topDonatorsUpdate', top5Donators);
         });
 
         connection.on('disconnect', () => {
