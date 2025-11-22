@@ -3,14 +3,19 @@ const app = express();
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 const { TikTokLiveConnection } = require('tiktok-live-connector');
+const fs = require('fs');
 
 // Serve static files from the 'public' directory
 app.use(express.static('public'));
+
+// Log file for donations
+const DONATIONS_LOG_FILE = 'donations.log';
 
 io.on('connection', (socket) => {
     console.log('A user connected.');
 
     let tiktokLiveConnection;
+    let donators = {}; // Moved donators here to be unique per connection
 
     const connectWithRetry = (uniqueId, attempt = 1) => {
         if (attempt > 3) {
@@ -28,16 +33,14 @@ io.on('connection', (socket) => {
             },
             requestHeaders: {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36"
-            }
+            },
+            enableExtendedGiftInfo: true // Enable this to get gift details
         });
 
         tiktokLiveConnection.connect().then(state => {
             console.info(`Connected to roomId ${state.roomId}`);
             socket.emit('connected', `Connected to ${uniqueId}`);
-
-            // NOW setup event handlers
             setupEventHandlers(tiktokLiveConnection);
-
         }).catch(err => {
             console.error(`Connection failed on attempt ${attempt}:`, String(err));
             setTimeout(() => connectWithRetry(uniqueId, attempt + 1), 3000); // Wait 3 seconds
@@ -45,19 +48,31 @@ io.on('connection', (socket) => {
     };
 
     const setupEventHandlers = (connection) => {
-        let likers = {};
-        connection.on('like', data => {
-            if (data.uniqueId) {
-                if (!likers[data.uniqueId]) {
-                    likers[data.uniqueId] = {
+        connection.on('gift', (data) => {
+            if (data.giftType === 1 && !data.repeatEnd) {
+                // Streak in progress, no need to act here
+            } else {
+                // Gift streak ended or non-streakable gift
+                if (!donators[data.uniqueId]) {
+                    donators[data.uniqueId] = {
                         username: data.uniqueId,
-                        likes: 0,
+                        diamonds: 0,
                         pfp: data.profilePictureUrl
                     };
                 }
-                likers[data.uniqueId].likes += data.likeCount;
-                const top5 = Object.values(likers).sort((a, b) => b.likes - a.likes).slice(0, 5);
-                socket.emit('topLikersUpdate', top5);
+                donators[data.uniqueId].diamonds += data.diamondCount * data.repeatCount;
+
+                // Log the donation
+                const logEntry = `${new Date().toISOString()} | ${data.uniqueId} donated ${data.diamondCount * data.repeatCount} diamonds with ${data.giftName}.\n`;
+                fs.appendFile(DONATIONS_LOG_FILE, logEntry, (err) => {
+                    if (err) console.error('Failed to log donation:', err);
+                });
+
+                // Update and emit top 5 donators
+                const top5Donators = Object.values(donators)
+                    .sort((a, b) => b.diamonds - a.diamonds)
+                    .slice(0, 5);
+                socket.emit('topDonatorsUpdate', top5Donators);
             }
         });
 
@@ -74,6 +89,9 @@ io.on('connection', (socket) => {
         if (tiktokLiveConnection) {
             tiktokLiveConnection.disconnect();
         }
+        donators = {}; // Reset donators for the new connection
+        // Emit an empty list to clear the frontend
+        socket.emit('topDonatorsUpdate', []);
         connectWithRetry(uniqueId);
     });
 

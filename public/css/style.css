@@ -74,7 +74,7 @@ body {
 }
 
 
-.top-likers {
+.top-donators {
     width: 40%;
     padding: 20px;
     background-color: #fff;
@@ -86,13 +86,13 @@ h2 {
     padding-bottom: 10px;
 }
 
-#likers-list {
+#donators-list {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-#likers-list li {
+#donators-list li {
     display: flex;
     align-items: center;
     margin-bottom: 15px;
@@ -101,26 +101,26 @@ h2 {
     transition: background-color 0.2s;
 }
 
-#likers-list li:hover {
+#donators-list li:hover {
     background-color: #f9f9f9;
 }
 
-#likers-list img {
+#donators-list img {
     width: 50px;
     height: 50px;
     border-radius: 50%;
     margin-right: 15px;
 }
 
-#likers-list .user-info {
+#donators-list .user-info {
     flex-grow: 1;
 }
 
-#likers-list .username {
+#donators-list .username {
     font-weight: bold;
 }
 
-#likers-list .likes {
+#donators-list .donations {
     color: #888;
     margin-top: 3px;
 }
